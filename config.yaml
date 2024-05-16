@@ -1,0 +1,15 @@
+backbone: "efficientnet_b3.ra2_in1k"
+num_classes : 200
+
+
+training:
+  num_epochs: 10
+  visualize: True
+
+data:
+  batch_size_train: 512
+  batch_size_test: 512
+  num_workers: 4
+
+logger:
+  wandb: False
