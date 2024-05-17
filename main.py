@@ -1,15 +1,8 @@
-import os
-import sys
 import argparse
-import numpy as np
 import yaml
 import wandb
 import torch
-import torchvision
 import torch.nn as nn
-from torch.utils.data import DataLoader
-from torchvision import datasets
-from torchvision import transforms
 
 import train
 from dataset import get_cub
@@ -41,6 +34,15 @@ def set_to_finetune_mode(model, do_summary=False):
         ) 
 
     return model
+
+def get_optimizer(model):
+    # optimizer = optim.SGD(net.parameters(), lr=lr, weight_decay=wd, momentum=momentum)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    return optimizer
+
+def get_loss_function():
+    loss_function = nn.CrossEntropyLoss()
+    return loss_function
 
 
 def main(args):
@@ -86,18 +88,21 @@ def main(args):
     train_loader, val_loader, test_loader = get_cub(batch_size_train, transforms, val_split=0.2)
     print("Done")
 
+
+    # Define loss and optimizer
+    loss_function = get_loss_function()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
     print("Training")
     train.train(
         model,
         train_loader,
         val_loader,
         test_loader,
+        optimizer,
+        loss_function,
         num_epochs,
-        device,
-        config,
-        learning_rate=0.0001,
-        weight_decay=0.0000001,
-        momentum=0.9
+        device
     )
     print("Done")
 

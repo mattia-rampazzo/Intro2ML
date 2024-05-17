@@ -1,29 +1,10 @@
 import torch
-#import numpy as np
-#import wandb
-#import utils
-import torch.optim as optim
-import torch.nn as nn
-#import test
-#from tqdm import tqdm
-#from utils import save_model
-#from utils import visualize
-#from utils import set_model_mode
 
-
-
-def get_optimizer(net, lr, wd, momentum):
-    optimizer = optim.SGD(net.parameters(), lr=lr, weight_decay=wd, momentum=momentum)
-    return optimizer
-
-def get_loss_function():
-    loss_function = nn.CrossEntropyLoss()
-    return loss_function
-
+# train one epoch
 def training_step(net, data_loader, optimizer, cost_function, device):
-    samples = 0.0
-    cumulative_loss = 0.0
-    cumulative_accuracy = 0.0
+    samples = 0.
+    cumulative_loss = 0.
+    cumulative_accuracy = 0.
 
     # Set the network to training mode
     net.train()
@@ -39,6 +20,7 @@ def training_step(net, data_loader, optimizer, cost_function, device):
 
         # Loss computation
         loss = cost_function(outputs, targets)
+        cumulative_loss += loss.item()
 
         # Backward pass
         loss.backward()
@@ -51,13 +33,13 @@ def training_step(net, data_loader, optimizer, cost_function, device):
 
         # Fetch prediction and loss value
         samples += inputs.shape[0]
-        cumulative_loss += loss.item()
         _, predicted = outputs.max(dim=1) # max() returns (maximum_value, index_of_maximum_value)
 
         # Compute training accuracy
         cumulative_accuracy += predicted.eq(targets).sum().item()
 
-    return cumulative_loss / samples, cumulative_accuracy / samples * 100
+    return cumulative_loss / samples, cumulative_accuracy / samples
+
 
 def test_step(net, data_loader, cost_function, device):
     samples = 0.
@@ -67,7 +49,7 @@ def test_step(net, data_loader, cost_function, device):
     # Set the network to evaluation mode
     net.eval()
 
-    # Disable gradient computation (we are only testing, we do not want our model to be modified in this step!)
+    # Disable gradient computation
     with torch.no_grad():
         # Iterate over the test set
         for batch_idx, (inputs, targets) in enumerate(data_loader):
@@ -80,37 +62,27 @@ def test_step(net, data_loader, cost_function, device):
 
             # Loss computation
             loss = cost_function(outputs, targets)
+            cumulative_loss += loss.item()
 
             # Fetch prediction and loss value
             samples += inputs.shape[0]
-            cumulative_loss += loss.item() # Note: the .item() is needed to extract scalars from tensors
             _, predicted = outputs.max(1)
 
             # Compute accuracy
             cumulative_accuracy += predicted.eq(targets).sum().item()
 
-    return cumulative_loss / samples, cumulative_accuracy / samples * 100
+    return cumulative_loss / samples, cumulative_accuracy / samples
 
 
-# Main function
-def train(
-    net,
-    train_loader,
-    val_loader,
-    test_loader,
-    epochs,
-    device,
-    config,
-    learning_rate=0.0001,
-    weight_decay=0.0000001,
-    momentum=0.9
-):
+def train(net: torch.nn.Module, 
+          train_loader: torch.utils.data.DataLoader, 
+          val_loader: torch.utils.data.DataLoader, 
+          test_loader: torch.utils.data.DataLoader, 
+          optimizer: torch.optim.Optimizer,
+          loss_function: torch.nn.Module,
+          epochs: int,
+          device: torch.device):    # -> Dict[str, List]:
 
-    # Instantiate the optimizer
-    optimizer = get_optimizer(net, learning_rate, weight_decay, momentum)
-
-    # Define the cost function
-    loss_function = get_loss_function()
 
     # Computes evaluation results before training
     print("Before training:")
@@ -151,3 +123,7 @@ def train(
     print(f"\tValidation loss {val_loss:.5f}, Validation accuracy {val_accuracy:.2f}")
     print(f"\tTest loss {test_loss:.5f}, Test accuracy {test_accuracy:.2f}")
     print("-----------------------------------------------------")
+
+
+
+# for more reference https://github.com/mrdbourke/pytorch-deep-learning/blob/main/going_modular/going_modular/engine.py

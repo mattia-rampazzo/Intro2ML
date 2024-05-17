@@ -1,6 +1,5 @@
-backbone: "efficientnet_b3.ra2_in1k"
+backbone: "convnextv2_base.fcmae_ft_in22k_in1k"
 num_classes : 200
-
 
 training:
   num_epochs: 10
