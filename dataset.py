@@ -1,25 +1,67 @@
 import os
-import pandas as pd
-from torchvision.datasets.folder import default_loader
-from torchvision.datasets.utils import download_url
-from torch.utils.data import Dataset, DataLoader, random_split
+import torchvision
+from torch.utils.data import DataLoader, random_split
+from torchvision.datasets.utils import extract_archive
+from torchvision.datasets.utils import download_file_from_google_drive
+
+from utils import dataset_map
 
 
-def get_cub(batch_size, transforms, val_split=0.2):
-    # Load datasets
-    full_training_data =  Cub2011("./data", train=True, transform=transforms, download=True)
-    test_data = Cub2011("./data", train=False, transform=transforms, download=True)
+def get_data(dataset_name, batch_size, transforms, val_split=0.2):
+    download_path = os.path.join("data", dataset_name)
 
-    # Create train and validation splits
-    num_samples = len(full_training_data)
-    training_samples = int(num_samples * (1 - val_split) + 1)
-    validation_samples = num_samples - training_samples
+    # Load dataset
+    if dataset_name in dataset_map:
+        dataset_class = dataset_map[dataset_name]
 
-    training_data, validation_data = random_split(full_training_data, [training_samples, validation_samples])
+        # if dataset_name=="tiny_imagenet":
+        #     Dataset classes with split string parameter accepting train, val
+        #     full_training_data = dataset_class(root=download_path, split="train", transform=transforms, download=True)
+        #     test_data = dataset_class(root=download_path, split="val", transform=transforms, download=True)
 
+        if dataset_name=="cub2011" or dataset_name=="dogs" or dataset_name=="food":
+            # Dataset classes with train boolean parameter
+            full_training_data = dataset_class(root=download_path, train=True, transform=transforms, download=True)
+            test_data = dataset_class(root=download_path, train=False, transform=transforms, download=True)
+            # Create train and validation splits
+            num_samples = len(full_training_data)
+            training_samples = int(num_samples * (1 - val_split) + 1)
+            validation_samples = num_samples - training_samples
+            training_data, validation_data = random_split(full_training_data, [training_samples, validation_samples])
+        else:
+            # Dataset classes with split string parameter accepting train, val and test
+            training_data = dataset_class(root=download_path, split="train", transform=transforms, download=True)
+            validation_data = dataset_class(root=download_path, split="val", transform=transforms, download=True)
+            test_data = dataset_class(root=download_path, split="test", transform=transforms, download=True)
+    
+    # special case for cars...
+    else: 
+        if dataset_name=="cars":
+            # Datasets with ImageFolder
+            train_path = os.path.join(download_path, 'car_data/car_data/train')
+            test_path = os.path.join(download_path, 'car_data/car_data/test')
+
+            archive_id = "1gwDRdAs9v39gyEeN3uWottjh4mXgsN-9" # GDrive id of the archive
+
+            if not(os.path.exists(os.path.join(download_path, 'stanford_cars.zip'))):
+                download_file_from_google_drive(archive_id, download_path, "stanford_cars.zip")
+            if not(os.path.exists(train_path) and os.path.exists(test_path)):
+                print("Extracting...")
+                extract_archive(os.path.join(download_path, 'stanford_cars.zip'))
+                
+            full_training_data = torchvision.datasets.ImageFolder(root=train_path, transform=transforms)
+            test_data = torchvision.datasets.ImageFolder(root=test_path, transform=transforms)
+            # Create train and validation splits
+            num_samples = len(full_training_data)
+            training_samples = int(num_samples * (1 - val_split) + 1)
+            validation_samples = num_samples - training_samples
+            training_data, validation_data = random_split(full_training_data, [training_samples, validation_samples])
+        else:
+            raise ValueError(f"Unknown dataset name: {dataset_name}")
+    
     # Print some stats
     print(f"# of training samples: {len(training_data)}")
-    # print(f"# of validation samples: {len(validation_data)}")
+    print(f"# of validation samples: {len(validation_data)}")
     print(f"# of test samples: {len(test_data)}")
 
     # Initialize dataloaders
@@ -28,81 +70,3 @@ def get_cub(batch_size, transforms, val_split=0.2):
     test_loader = DataLoader(test_data, batch_size, shuffle=False)
 
     return train_loader, val_loader, test_loader
-
-
-
-# CUB-200-2011
-# code taken from https://github.com/lvyilin/pytorch-fgvc-dataset/blob/master/cub2011.py
-class Cub2011(Dataset):
-    base_folder = 'CUB_200_2011/images'
-    url = 'https://data.caltech.edu/records/65de6-vp158/files/CUB_200_2011.tgz'
-    filename = 'CUB_200_2011.tgz'
-    tgz_md5 = '97eceeb196236b17998738112f37df78'
-
-    def __init__(self, root, train=True, transform=None, loader=default_loader, download=True):
-        self.root = os.path.expanduser(root)
-        self.transform = transform
-        self.loader = default_loader
-        self.train = train
-
-        if download:
-            self._download()
-
-        if not self._check_integrity():
-            raise RuntimeError('Dataset not found or corrupted.' +
-                               ' You can use download=True to download it')
-
-    def _load_metadata(self):
-        images = pd.read_csv(os.path.join(self.root, 'CUB_200_2011', 'images.txt'), sep=' ',
-                             names=['img_id', 'filepath'])
-        image_class_labels = pd.read_csv(os.path.join(self.root, 'CUB_200_2011', 'image_class_labels.txt'),
-                                         sep=' ', names=['img_id', 'target'])
-        train_test_split = pd.read_csv(os.path.join(self.root, 'CUB_200_2011', 'train_test_split.txt'),
-                                       sep=' ', names=['img_id', 'is_training_img'])
-
-        data = images.merge(image_class_labels, on='img_id')
-        self.data = data.merge(train_test_split, on='img_id')
-
-        if self.train:
-            self.data = self.data[self.data.is_training_img == 1]
-        else:
-            self.data = self.data[self.data.is_training_img == 0]
-
-    def _check_integrity(self):
-        try:
-            self._load_metadata()
-        except Exception:
-            return False
-
-        for index, row in self.data.iterrows():
-            filepath = os.path.join(self.root, self.base_folder, row.filepath)
-            if not os.path.isfile(filepath):
-                print(filepath)
-                return False
-        return True
-
-    def _download(self):
-        import tarfile
-
-        if self._check_integrity():
-            print('Files already downloaded and verified')
-            return
-
-        download_url(self.url, self.root, self.filename, self.tgz_md5)
-
-        with tarfile.open(os.path.join(self.root, self.filename), "r:gz") as tar:
-            tar.extractall(path=self.root)
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        sample = self.data.iloc[idx]
-        path = os.path.join(self.root, self.base_folder, sample.filepath)
-        target = sample.target - 1  # Targets start at 1 by default, so shift to 0
-        img = self.loader(path)
-
-        if self.transform is not None:
-            img = self.transform(img)
-
-        return img, target
