@@ -1,6 +1,7 @@
 import torch
 import torchvision
 import torch.nn as nn
+import os
 
 from dogs import Dogs
 from cub2011 import Cub2011
@@ -66,10 +67,19 @@ def set_to_finetune_mode(model, do_summary=False):
 
 def get_optimizer(model):
     # optimizer = optim.SGD(net.parameters(), lr=lr, weight_decay=wd, momentum=momentum)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
     return optimizer
 
 def get_loss_function():
     loss_function = nn.CrossEntropyLoss()
     return loss_function
 
+def save_model(weights, save_folder, run_name):
+    print("Saving model")
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder)
+
+    torch.save(
+        weights,
+        os.path.join(save_folder, run_name)
+    )

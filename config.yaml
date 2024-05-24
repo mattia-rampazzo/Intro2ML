@@ -2,8 +2,8 @@ dataset_name: "cub2011"
 backbone: "convnextv2_base.fcmae_ft_in22k_in1k"
 
 training:
-  num_epochs: 10
-  visualize: True
+  num_epochs: 30
+  #visualize: True
 
 data:
   batch_size_train: 512
@@ -11,4 +11,4 @@ data:
   num_workers: 4
 
 logger:
-  wandb: False
+  wandb: true

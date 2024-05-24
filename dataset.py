@@ -6,8 +6,7 @@ from torchvision.datasets.utils import download_file_from_google_drive
 
 from utils import dataset_map
 
-
-def get_data(dataset_name, batch_size, transforms, val_split=0.2):
+def get_data(dataset_name, batch_size, transforms, num_workers, val_split=0.2):
     download_path = os.path.join("data", dataset_name)
 
     # Load dataset
@@ -20,9 +19,14 @@ def get_data(dataset_name, batch_size, transforms, val_split=0.2):
         #     test_data = dataset_class(root=download_path, split="val", transform=transforms, download=True)
 
         if dataset_name=="cub2011" or dataset_name=="dogs" or dataset_name=="food":
-            # Dataset classes with train boolean parameter
-            full_training_data = dataset_class(root=download_path, train=True, transform=transforms, download=True)
-            test_data = dataset_class(root=download_path, train=False, transform=transforms, download=True)
+            if dataset_name=="food":
+                # Dataset classes with split string parameter accepting train, val and test
+                full_training_data = dataset_class(root=download_path, split="train", transform=transforms, download=True)
+                test_data = dataset_class(root=download_path, split="test", transform=transforms, download=True)
+            else:
+                # Dataset classes with train boolean parameter
+                full_training_data = dataset_class(root=download_path, train=True, transform=transforms, download=True)
+                test_data = dataset_class(root=download_path, train=False, transform=transforms, download=True)
             # Create train and validation splits
             num_samples = len(full_training_data)
             training_samples = int(num_samples * (1 - val_split) + 1)
@@ -65,8 +69,8 @@ def get_data(dataset_name, batch_size, transforms, val_split=0.2):
     print(f"# of test samples: {len(test_data)}")
 
     # Initialize dataloaders
-    train_loader = DataLoader(training_data, batch_size, shuffle=True)
-    val_loader = DataLoader(validation_data, batch_size, shuffle=False)
-    test_loader = DataLoader(test_data, batch_size, shuffle=False)
+    train_loader = DataLoader(training_data, batch_size, num_workers=num_workers, shuffle=True)
+    val_loader = DataLoader(validation_data, batch_size, num_workers=num_workers, shuffle=False)
+    test_loader = DataLoader(test_data, batch_size, num_workers=num_workers, shuffle=False)
 
     return train_loader, val_loader, test_loader

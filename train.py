@@ -1,4 +1,7 @@
+import copy
 import torch
+import wandb
+from utils import save_model
 
 # train one epoch
 def training_step(net, data_loader, optimizer, cost_function, device):
@@ -81,7 +84,9 @@ def train(net: torch.nn.Module,
           optimizer: torch.optim.Optimizer,
           loss_function: torch.nn.Module,
           epochs: int,
-          device: torch.device):    # -> Dict[str, List]:
+          device: torch.device,
+          save_folder: str,
+          run_name: str):    # -> Dict[str, List]:
 
 
     # Computes evaluation results before training
@@ -90,8 +95,18 @@ def train(net: torch.nn.Module,
     val_loss, val_accuracy = test_step(net, val_loader, loss_function, device)
     test_loss, test_accuracy = test_step(net, test_loader, loss_function, device)
 
-    # Log to TensorBoard
+    best_loss = val_loss
+    best_model_weights = None
+    patience = 3 # at most 3 epoch without improving
+    
+    # learning rate scheduler
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
 
+    # Log to wandb
+    wandb.log({
+        "Training accuracy": train_accuracy,
+        "Validation accuracy" : val_accuracy
+    })
 
     print(f"\tTraining loss {train_loss:.5f}, Training accuracy {train_accuracy:.2f}")
     print(f"\tValidation loss {val_loss:.5f}, Validation accuracy {val_accuracy:.2f}")
@@ -101,23 +116,45 @@ def train(net: torch.nn.Module,
     # For each epoch, train the network and then compute evaluation results
     for e in range(epochs):
         train_loss, train_accuracy = training_step(net, train_loader, optimizer, loss_function, device)
+        scheduler.step()
         val_loss, val_accuracy = test_step(net, val_loader, loss_function, device)
 
-        # Logs to TensorBoard
+        # Early stopping
+        if(val_loss < best_loss):
+            best_loss = val_loss
+            best_model_weights = copy.deepcopy(net.state_dict())  # Deep copy here      
+            patience = 3 # reset patience
+        else:
+            patience -= 1
+            if patience == 0:
+                break
+
+        # Log to wandb
+        wandb.log({
+            "Training accuracy": train_accuracy,
+            "Validation accuracy" : val_accuracy
+        })
 
         print(f"Epoch: {e + 1}")
         print(f"\tTraining loss {train_loss:.5f}, Training accuracy {train_accuracy:.2f}")
         print(f"\tValidation loss {val_loss:.5f}, Validation accuracy {val_accuracy:.2f}")
         print("-----------------------------------------------------")
 
+
+    # Load the best model weights
+    save_model(best_model_weights, save_folder, run_name)
+    
     # Compute final evaluation results
     print("After training:")
     train_loss, train_accuracy = test_step(net, train_loader, loss_function, device)
     val_loss, val_accuracy = test_step(net, val_loader, loss_function, device)
     test_loss, test_accuracy = test_step(net, test_loader, loss_function, device)
 
-    # Log to TensorBoard
-
+    # Log to wandb
+    wandb.log({
+        "Training accuracy": train_accuracy,
+        "Validation accuracy" : val_accuracy
+    })
 
     print(f"\tTraining loss {train_loss:.5f}, Training accuracy {train_accuracy:.2f}")
     print(f"\tValidation loss {val_loss:.5f}, Validation accuracy {val_accuracy:.2f}")
