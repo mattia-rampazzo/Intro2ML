@@ -5,11 +5,11 @@ class LabelPredictor(nn.Module):
     def __init__(self):
         super(LabelPredictor, self).__init__()
         self.classifier = nn.Sequential(
-            nn.Linear(in_features=1024 * 7 * 7, out_features=100),
+            nn.Linear(in_features=1024 * 7 * 7, out_features=200),
             nn.ReLU(),
-            nn.Linear(in_features=100, out_features=100),
+            nn.Linear(in_features=200, out_features=100),
             nn.ReLU(),
-            nn.Linear(in_features=100, out_features=10),
+            nn.Linear(in_features=100, out_features=200),
         )
 
     def forward(self, x):
@@ -23,7 +23,7 @@ class DomainClassifier(nn.Module):
         self.discriminator = nn.Sequential(
             nn.Linear(in_features=1024 * 7 * 7, out_features=100),
             nn.ReLU(),
-            nn.Linear(in_features=100, out_features=1),
+            nn.Linear(in_features=100, out_features=2),
             nn.Sigmoid(),
         )
 

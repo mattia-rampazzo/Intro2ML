@@ -10,11 +10,11 @@ encoder.head = nn.Identity()
 encoder = encoder.to(device)
 dummy_input = torch.randn(1, 3, 224, 224)  # Example shape for an image input (batch_size, channels, height, width)
 
-# Pass the dummy input through the model to get the feature outputs
-#with torch.no_grad():
-#    features = encoder(dummy_input)
+#Pass the dummy input through the model to get the feature outputs
+with torch.no_grad():
+    features = encoder(dummy_input)
 
-#last_feature_shape = features[-1].shape
-#print(f'Last feature shape: {last_feature_shape}')
+last_feature_shape = features[-1].shape
+print(f'Last feature shape: {last_feature_shape}')
 output = encoder(dummy_input)
 print(f"\nOutput shape: {type(output)}") 
