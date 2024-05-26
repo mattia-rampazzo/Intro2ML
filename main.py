@@ -43,15 +43,15 @@ def main(args):
 
     # load model
     print(f"Loading {backbone_name} from timm...")
-    encoder = timm.create_model(backbone_name, pretrained=True, num_classes = get_num_classes(dataset_name)) #feature_extractor=True)
-    encoder.head = nn.Identity()
+    encoder = timm.create_model(backbone_name, pretrained=True, num_classes = get_num_classes(dataset_name), feature_extractor=True)
+    #encoder.head = nn.Identity()
     encoder = encoder.to(device)
     # freeze all the layers up to last
-    encoder = set_to_finetune_mode(encoder)
+    #encoder = set_to_finetune_mode(encoder)
 
     # missing something here
     classifier = model.LabelPredictor().to(device)
-    discriminator = model.DomainClassifier().to(device)
+    discriminator = model.DomainDiscriminator().to(device)
     print("Done")
 
     print("Load data")

@@ -1,35 +1,30 @@
 import torch.nn as nn
 from torch.autograd import Function
+import torch.nn.functional as F
 
 class LabelPredictor(nn.Module):
-    def __init__(self):
+    def __init__(self, input_dim=1024*7*7 , num_classes=200): #1024*7*7 , 200
         super(LabelPredictor, self).__init__()
-        self.classifier = nn.Sequential(
-            nn.Linear(in_features=1024 * 7 * 7, out_features=200),
-            nn.ReLU(),
-            nn.Linear(in_features=200, out_features=100),
-            nn.ReLU(),
-            nn.Linear(in_features=100, out_features=200),
-        )
-
+        self.fc1 = nn.Linear(input_dim, 100)
+        self.fc2 = nn.Linear(100, num_classes)
+    
     def forward(self, x):
-        x = self.classifier(x)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
         return x
 
 
-class DomainClassifier(nn.Module):
-    def __init__(self):
-        super(DomainClassifier, self).__init__()
-        self.discriminator = nn.Sequential(
-            nn.Linear(in_features=1024 * 7 * 7, out_features=100),
-            nn.ReLU(),
-            nn.Linear(in_features=100, out_features=2),
-            nn.Sigmoid(),
-        )
-
-    def forward(self, input_feature, alpha):
-        reversed_input = ReverseLayerF.apply(input_feature, alpha)
-        x = self.discriminator(reversed_input)
+class DomainDiscriminator(nn.Module):
+    def __init__(self, input_dim=1024*7*7 ):
+        super(DomainDiscriminator, self).__init__()
+        self.grl = GradientReversalLayer()
+        self.fc1 = nn.Linear(input_dim, 100)
+        self.fc2 = nn.Linear(100, 2)
+    
+    def forward(self, x):
+        x = self.grl(x)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
         return x
 
 
@@ -55,3 +50,11 @@ class ReverseLayerF(Function):
         output = grad_output.neg() * ctx.alpha
 
         return output, None
+    
+class GradientReversalLayer(nn.Module):
+    def __init__(self, lambda_=1.0):
+        super(GradientReversalLayer, self).__init__()
+        self.lambda_ = lambda_
+    
+    def forward(self, x):
+        return ReverseLayerF.apply(x, self.lambda_)

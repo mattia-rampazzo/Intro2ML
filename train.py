@@ -200,53 +200,79 @@ def dann(
         total_correct = 0
 
         # Iterate through source and target training data
-        for (source_data, source_labels), (target_data, _) in zip(source_train_loader, target_train_loader):
-            source_data, source_labels = source_data.to(device), source_labels.to(device)
-            target_data = target_data.to(device)
-            
-            # Domain labels
-            source_domain_labels = torch.ones(source_data.size(0), 1).to(device)
-            target_domain_labels = torch.zeros(target_data.size(0), 1).to(device)
+        for i, (source_data, target_data) in enumerate(zip(source_train_loader, target_train_loader)):
+            # Prepare the data
+            source_inputs, source_labels = source_data[0].to(device), source_data[1].to(device)
+            target_inputs, _ = target_data[0].to(device), target_data[1].to(device)
 
-            # Zero gradients
+            # Prepare domain labels
+            source_domain_labels = torch.ones(source_inputs.size(0), 1).to(device)
+            target_domain_labels = torch.zeros(target_inputs.size(0), 1).to(device)
+
+            # Concatenate inputs for domain classifier
+            all_inputs = torch.cat([source_inputs, target_inputs], dim=0)
+            all_domain_labels = torch.cat([source_domain_labels, target_domain_labels], dim=0)
+
+            # Zero the gradients
             optimizer_encoder.zero_grad()
             optimizer_classifier.zero_grad()
             optimizer_discriminator.zero_grad()
 
-            # Forward pass
-            source_features = encoder(source_data)
-            target_features = encoder(target_data)
+            # Forward pass through the encoder
+            encoded_features = encoder(all_inputs)
 
-            source_class_preds = classifier(source_features)
-            source_domain_preds = discriminator(source_features)
-            target_domain_preds = discriminator(target_features)
-
-            # Calculate losses
-            class_loss = criterion_class(source_class_preds, source_labels)
-            domain_loss = criterion_domain(source_domain_preds, source_domain_labels) + \
-                          criterion_domain(target_domain_preds, target_domain_labels)
-            
-            # Backpropagation and optimization
-            class_loss.backward(retain_graph=True)
-            optimizer_classifier.step()
-            
+            # Train domain discriminator
+            domain_outputs = discriminator(encoded_features.detach())
+            domain_loss = criterion_domain(domain_outputs, all_domain_labels)
             domain_loss.backward()
-            optimizer_encoder.step()
             optimizer_discriminator.step()
 
-            # Update total loss and correct predictions
-            total_loss += class_loss.item()
-            _, predicted = torch.max(source_class_preds.data, 1)
-            total_correct += (predicted == source_labels).sum().item()
+            # Forward pass through the classifier
+            class_outputs = classifier(encoded_features[:source_inputs.size(0)])
 
-        # Calculate and print epoch loss and accuracy
-        epoch_loss = total_loss / len(source_train_loader)
-        epoch_accuracy = total_correct / len(source_train_loader.dataset)
-        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.4f}')
+            # Compute classification loss
+            class_loss = criterion_class(class_outputs, source_labels)
+            class_loss.backward()
+            optimizer_encoder.step()
+            optimizer_classifier.step()
 
-        # Evaluation on test data
-        test.evaluate(encoder, classifier, source_test_loader, target_test_loader, device)
+            # Print statistics
+            if i % 100 == 0:
+                print(f"Epoch [{epoch+1}/{num_epochs}], Step [{i}/{min(len(source_train_loader), len(target_train_loader))}], "
+                      f"Class Loss: {class_loss.item():.4f}, Domain Loss: {domain_loss.item():.4f}")
 
+        # Evaluation phase
+        encoder.eval()
+        classifier.eval()
+        discriminator.eval()
+
+        # Evaluate on source domain
+        correct_source, total_source = 0, 0
+        with torch.no_grad():
+            for source_data in source_test_loader:
+                source_inputs, source_labels = source_data[0].to(device), source_data[1].to(device)
+                encoded_features = encoder(source_inputs)
+                class_outputs = classifier(encoded_features)
+                _, predicted = torch.max(class_outputs.data, 1)
+                total_source += source_labels.size(0)
+                correct_source += (predicted == source_labels).sum().item()
+
+        # Evaluate on target domain
+        correct_target, total_target = 0, 0
+        with torch.no_grad():
+            for target_data in target_test_loader:
+                target_inputs, target_labels = target_data[0].to(device), target_data[1].to(device)
+                encoded_features = encoder(target_inputs)
+                class_outputs = classifier(encoded_features)
+                _, predicted = torch.max(class_outputs.data, 1)
+                total_target += target_labels.size(0)
+                correct_target += (predicted == target_labels).sum().item()
+
+        print(f"Epoch [{epoch+1}/{num_epochs}], "
+              f"Source Accuracy: {(100 * correct_source / total_source):.2f}%, "
+              f"Target Accuracy: {(100 * correct_target / total_target):.2f}%")
+
+    print("Training finished")
 
 
 # for more reference https://github.com/mrdbourke/pytorch-deep-learning/blob/main/going_modular/going_modular/engine.py
