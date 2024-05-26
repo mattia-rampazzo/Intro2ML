@@ -5,126 +5,33 @@ from model import DomainClassifier
 from utils import set_model_mode
 
 
-def tester(
-    encoder,
-    classifier,
-    discriminator,
-    source_test_loader,
-    target_test_loader,
-    training_mode,
-    device,
-    epoch,
-):
-    encoder.to(device)
-    classifier.to(device)
-    set_model_mode("eval", [encoder, classifier])
-
-    if training_mode == "DANN":
-        discriminator.to(device)
-        set_model_mode("eval", [discriminator])
-        domain_correct = 0
+def evaluate(encoder, classifier, source_test_loader, target_test_loader, device):
+    encoder.eval()
+    classifier.eval()
 
     source_correct = 0
     target_correct = 0
+    source_total = 0
+    target_total = 0
 
-    for batch_idx, (source_data, target_data) in enumerate(
-        zip(source_test_loader, target_test_loader)
-    ):
-        p = float(batch_idx) / len(source_test_loader)
-        alpha = 2.0 / (1.0 + np.exp(-10 * p)) - 1
+    with torch.no_grad():
+        for data, labels in source_test_loader:
+            data, labels = data.to(device), labels.to(device)
+            features = encoder(data)
+            outputs = classifier(features)
+            _, predicted = torch.max(outputs.data, 1)
+            source_total += labels.size(0)
+            source_correct += (predicted == labels).sum().item()
 
-        # Process source and target data
-        source_image, source_label = process_data(
-            source_data, device, expand_channels=True
-        )
-        target_image, target_label = process_data(target_data, device)
+        for data, labels in target_test_loader:
+            data, labels = data.to(device), labels.to(device)
+            features = encoder(data)
+            outputs = classifier(features)
+            _, predicted = torch.max(outputs.data, 1)
+            target_total += labels.size(0)
+            target_correct += (predicted == labels).sum().item()
 
-        # Compute source and target predictions
-        source_pred = compute_output(encoder, classifier, source_image, alpha=None)
-        target_pred = compute_output(encoder, classifier, target_image, alpha=None)
+    source_accuracy = source_correct / source_total
+    target_accuracy = target_correct / target_total
 
-        # Update correct counts
-        source_correct += (
-            source_pred.eq(source_label.data.view_as(source_pred)).sum().item()
-        )
-        target_correct += (
-            target_pred.eq(target_label.data.view_as(target_pred)).sum().item()
-        )
-
-        if training_mode == "DANN":
-            # Process combined images for domain classification
-            combined_image = torch.cat((source_image, target_image), 0)
-            domain_labels = torch.cat(
-                (
-                    torch.zeros(source_label.size(0), dtype=torch.long),
-                    torch.ones(target_label.size(0), dtype=torch.long),
-                ),
-                0,
-            ).to(device)
-
-            # Compute domain predictions
-            domain_pred = compute_output(
-                encoder, discriminator, combined_image, alpha=alpha
-            )
-            domain_correct += (
-                domain_pred.eq(domain_labels.data.view_as(domain_pred)).sum().item()
-            )
-
-    source_dataset_len = len(source_test_loader.dataset)
-    target_dataset_len = len(target_test_loader.dataset)
-
-    accuracies = {
-        "Source": {
-            "correct": source_correct,
-            "total": source_dataset_len,
-            "accuracy": calculate_accuracy(source_correct, source_dataset_len),
-        },
-        "Target": {
-            "correct": target_correct,
-            "total": target_dataset_len,
-            "accuracy": calculate_accuracy(target_correct, target_dataset_len),
-        },
-    }
-
-    #if training_mode == "DANN":
-    #    accuracies["Domain"] = {
-    #        "correct": domain_correct,
-    #        "total": source_dataset_len + target_dataset_len,
-    #        "accuracy": calculate_accuracy(
-    #            domain_correct, source_dataset_len + target_dataset_len
-    #        ),
-    #    }
-
-    print_accuracy(training_mode, accuracies, epoch)
-
-
-def process_data(data, device, expand_channels=False):
-    images, labels = data
-    images, labels = images.to(device), labels.to(device)
-    if expand_channels:
-        images = images.repeat(
-            1, 3, 1, 1
-        )  # Repeat channels to convert to 3-channel images
-    return images, labels
-
-
-def compute_output(encoder, classifier, images, alpha=None):
-    features = encoder(images)
-    if isinstance(classifier, DomainClassifier):
-        outputs = classifier(features, alpha)  # Domain classifier
-    else:
-        outputs = classifier(features)  # Label predictor
-    preds = outputs.data.max(1, keepdim=True)[1]
-    return preds
-
-
-def calculate_accuracy(correct, total):
-    return 100.0 * correct / total
-
-
-def print_accuracy(training_mode, accuracies, epoch):
-    for key, value in accuracies.items():
-        #print(
-        #    f"{key} Accuracy: {value['correct']}/{value['total']} ({value['accuracy']:.2f}%)"
-        #) 
-        wandb.log({f"{training_mode}/{key}_accuracy": value["accuracy"]})
+    print(f'Source Test Accuracy: {source_accuracy:.4f}, Target Test Accuracy: {target_accuracy:.4f}')

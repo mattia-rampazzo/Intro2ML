@@ -179,95 +179,74 @@ def dann(
     source_test_loader,
     target_test_loader,
     num_epochs,
-    device,
-    config,
+    device
 ):
     print("Training with the DANN adaptation method")
 
-    classifier_criterion = nn.CrossEntropyLoss().to(device)
-    discriminator_criterion = nn.BCELoss().to(device)
+    criterion_class = torch.nn.CrossEntropyLoss()
+    criterion_domain = torch.nn.BCELoss()
 
-    optimizer = optim.SGD(
-        list(encoder.parameters())
-        + list(classifier.parameters())
-        + list(discriminator.parameters()),
-        lr=0.01,
-        momentum=0.9,
-    )
+    optimizer_encoder = torch.optim.Adam(encoder.parameters(), lr=0.001)
+    optimizer_classifier = torch.optim.Adam(classifier.parameters(), lr=0.001)
+    optimizer_discriminator = torch.optim.Adam(discriminator.parameters(), lr=0.001)
     
     
-    for epoch in tqdm(range(num_epochs)):
-        set_model_mode("train", [encoder, classifier, discriminator])
+    for epoch in range(num_epochs):
+        encoder.train()
+        classifier.train()
+        discriminator.train()
 
-        start_steps = epoch * len(source_train_loader)
-        total_steps = num_epochs * len(target_train_loader)
+        total_loss = 0
+        total_correct = 0
 
-        for batch_idx, (source_data, target_data) in enumerate(
-            zip(source_train_loader, target_train_loader)
-        ):
-            source_image, source_label = source_data
-            target_image, target_label = target_data
-
-            p = float(batch_idx + start_steps) / total_steps
-            alpha = 2.0 / (1.0 + np.exp(-10 * p)) - 1
-
-            source_image = torch.cat((source_image, source_image, source_image), 1)
-
-            source_image, source_label = source_image.to(device), source_label.to(
-                device
-            )
-            target_image, target_label = target_image.to(device), target_label.to(
-                device
-            )
-            combined_image = torch.cat((source_image, target_image), 0)
-
-            optimizer = utils.optimizer_scheduler(optimizer=optimizer, p=p)
-            optimizer.zero_grad()
-
-            combined_feature = encoder(combined_image)
-            source_feature = encoder(source_image)
-
-            # 1.Classification loss
-            class_pred = classifier(source_feature)
-            class_loss = classifier_criterion(class_pred, source_label)
-
-            # 2. Domain loss
-            domain_pred = discriminator(combined_feature, alpha)
-
-            domain_source_labels = torch.zeros(source_label.shape[0]).type(
-                torch.LongTensor
-            )
-            domain_target_labels = torch.ones(target_label.shape[0]).type(
-                torch.LongTensor
-            )
-            domain_combined_label = torch.cat(
-                (domain_source_labels, domain_target_labels), 0
-            ).to(device).unsqueeze(1).float()
+        # Iterate through source and target training data
+        for (source_data, source_labels), (target_data, _) in zip(source_train_loader, target_train_loader):
+            source_data, source_labels = source_data.to(device), source_labels.to(device)
+            target_data = target_data.to(device)
             
-            domain_loss = discriminator_criterion(domain_pred, domain_combined_label)
+            # Domain labels
+            source_domain_labels = torch.ones(source_data.size(0), 1).to(device)
+            target_domain_labels = torch.zeros(target_data.size(0), 1).to(device)
 
-            total_loss = class_loss + domain_loss
-            total_loss.backward()
-            optimizer.step()
+            # Zero gradients
+            optimizer_encoder.zero_grad()
+            optimizer_classifier.zero_grad()
+            optimizer_discriminator.zero_grad()
+
+            # Forward pass
+            source_features = encoder(source_data)
+            target_features = encoder(target_data)
+
+            source_class_preds = classifier(source_features)
+            source_domain_preds = discriminator(source_features)
+            target_domain_preds = discriminator(target_features)
+
+            # Calculate losses
+            class_loss = criterion_class(source_class_preds, source_labels)
+            domain_loss = criterion_domain(source_domain_preds, source_domain_labels) + \
+                          criterion_domain(target_domain_preds, target_domain_labels)
             
+            # Backpropagation and optimization
+            class_loss.backward(retain_graph=True)
+            optimizer_classifier.step()
             
-            wandb.log({
-                "DANN/loss": total_loss.item()},
-            )
+            domain_loss.backward()
+            optimizer_encoder.step()
+            optimizer_discriminator.step()
 
-        test.tester(
-            encoder,
-            classifier,
-            discriminator,
-            source_test_loader,
-            target_test_loader,
-            training_mode="DANN",
-            device=device,
-            epoch=epoch,
-        )
+            # Update total loss and correct predictions
+            total_loss += class_loss.item()
+            _, predicted = torch.max(source_class_preds.data, 1)
+            total_correct += (predicted == source_labels).sum().item()
 
-    save_model(encoder, classifier, discriminator, "DANN")
-    if config['training']['visualize']:
-        visualize(encoder, 'DANN', source_test_loader, target_test_loader)
+        # Calculate and print epoch loss and accuracy
+        epoch_loss = total_loss / len(source_train_loader)
+        epoch_accuracy = total_correct / len(source_train_loader.dataset)
+        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.4f}')
+
+        # Evaluation on test data
+        test.evaluate(encoder, classifier, source_test_loader, target_test_loader, device)
+
+
 
 # for more reference https://github.com/mrdbourke/pytorch-deep-learning/blob/main/going_modular/going_modular/engine.py

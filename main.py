@@ -3,6 +3,7 @@ import yaml
 import wandb
 import torch
 import torchvision
+from torch.utils.data import DataLoader
 import torch.nn as nn
 import train
 import timm
@@ -61,6 +62,9 @@ def main(args):
     test_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transforms)
     train_dataset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transforms)
 
+    target_train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size_train, shuffle=True)
+    target_test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size_test, shuffle=False)
+
     train_loader, val_loader, test_loader = get_data(dataset_name, batch_size_train, transforms, num_workers, val_split=0.2)
     print("Done")
 
@@ -78,17 +82,16 @@ def main(args):
         classifier,
         discriminator,
         train_loader,
-        train_dataset,
+        target_train_loader,
       #  val_loader,
         test_loader,
-        test_dataset,
+        target_test_loader,
       #  optimizer,
       #  loss_function,
         num_epochs,
         device,
       #  save_folder,
       #  run_name
-      config=config
     )
     print("Done")
 
