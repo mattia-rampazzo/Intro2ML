@@ -6,8 +6,8 @@ training:
   #visualize: True
 
 data:
-  batch_size_train: 512
-  batch_size_test: 512
+  batch_size_train: 64
+  batch_size_test: 64
   num_workers: 4
 
 logger:

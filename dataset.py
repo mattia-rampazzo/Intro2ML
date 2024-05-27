@@ -9,6 +9,9 @@ from utils import dataset_map
 def get_data(dataset_name, batch_size, transforms, num_workers, val_split=0.2):
     download_path = os.path.join("data", dataset_name)
 
+    num_workers = os.cpu_count()
+    print(f"Using {num_workers} workers")
+
     # Load dataset
     if dataset_name in dataset_map:
         dataset_class = dataset_map[dataset_name]

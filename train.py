@@ -95,9 +95,11 @@ def train(net: torch.nn.Module,
     val_loss, val_accuracy = test_step(net, val_loader, loss_function, device)
     test_loss, test_accuracy = test_step(net, test_loader, loss_function, device)
 
-    best_loss = val_loss
+    best_val_loss = val_loss
     best_model_weights = None
-    patience = 3 # at most 3 epoch without improving
+
+    early_stopping_patience = 3 # at most 3 epoch without improving
+    epochs_without_improvement = 0 
     
     # learning rate scheduler
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
@@ -119,16 +121,6 @@ def train(net: torch.nn.Module,
         scheduler.step()
         val_loss, val_accuracy = test_step(net, val_loader, loss_function, device)
 
-        # Early stopping
-        if(val_loss < best_loss):
-            best_loss = val_loss
-            best_model_weights = copy.deepcopy(net.state_dict())  # Deep copy here      
-            patience = 3 # reset patience
-        else:
-            patience -= 1
-            if patience == 0:
-                break
-
         # Log to wandb
         wandb.log({
             "Training accuracy": train_accuracy,
@@ -139,6 +131,17 @@ def train(net: torch.nn.Module,
         print(f"\tTraining loss {train_loss:.5f}, Training accuracy {train_accuracy:.2f}")
         print(f"\tValidation loss {val_loss:.5f}, Validation accuracy {val_accuracy:.2f}")
         print("-----------------------------------------------------")
+
+        # Early stopping
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            epochs_without_improvement = 0
+        else:
+            epochs_without_improvement += 1
+    
+        if epochs_without_improvement >= early_stopping_patience:
+            print('Early stopping triggered')
+            break
 
 
     # Load the best model weights
