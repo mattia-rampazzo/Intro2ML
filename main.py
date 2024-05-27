@@ -43,7 +43,7 @@ def main(args):
 
     # load model
     print(f"Loading {backbone_name} from timm...")
-    encoder = timm.create_model(backbone_name, pretrained=True, num_classes = get_num_classes(dataset_name), feature_extractor=True)
+    encoder = timm.create_model(backbone_name, pretrained=True, num_classes = get_num_classes(dataset_name), features_only=True)
     #encoder.head = nn.Identity()
     encoder = encoder.to(device)
     # freeze all the layers up to last
