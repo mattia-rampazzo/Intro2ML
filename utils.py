@@ -7,7 +7,7 @@ from dogs import Dogs
 from cub2011 import Cub2011
 
 dataset_num_classes = {
-    'aircraft': 102,
+    'aircraft': 100,
     'cars': 196,
     'cub2011': 200,
     'dogs': 120,
@@ -81,5 +81,5 @@ def save_model(weights, save_folder, run_name):
 
     torch.save(
         weights,
-        os.path.join(save_folder, run_name)
+        os.path.join(save_folder, f"{run_name}.pt")
     )

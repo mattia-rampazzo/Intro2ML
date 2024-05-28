@@ -1,4 +1,3 @@
-import copy
 import torch
 import wandb
 from utils import save_model
@@ -106,6 +105,8 @@ def train(net: torch.nn.Module,
 
     # Log to wandb
     wandb.log({
+        "Training loss": train_loss,
+        "Validation loss" : val_loss,
         "Training accuracy": train_accuracy,
         "Validation accuracy" : val_accuracy
     })
@@ -123,6 +124,8 @@ def train(net: torch.nn.Module,
 
         # Log to wandb
         wandb.log({
+            "Training loss": train_loss,
+            "Validation loss" : val_loss,
             "Training accuracy": train_accuracy,
             "Validation accuracy" : val_accuracy
         })
@@ -155,6 +158,8 @@ def train(net: torch.nn.Module,
 
     # Log to wandb
     wandb.log({
+        "Training loss": train_loss,
+        "Validation loss" : val_loss,
         "Training accuracy": train_accuracy,
         "Validation accuracy" : val_accuracy
     })

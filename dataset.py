@@ -6,7 +6,7 @@ from torchvision.datasets.utils import download_file_from_google_drive
 
 from utils import dataset_map
 
-def get_data(dataset_name, batch_size, transforms, num_workers, val_split=0.2):
+def get_data(dataset_name, batch_size, transforms, val_split=0.2):
     download_path = os.path.join("data", dataset_name)
 
     num_workers = os.cpu_count()
