@@ -8,6 +8,8 @@ import timm
 from dataset import get_data
 from utils import get_loss_function, get_num_classes, get_optimizer, set_to_finetune_mode
 
+from model import CustomClassifier
+
 def main(args):
     
     torch.manual_seed(1234)
@@ -38,11 +40,17 @@ def main(args):
 
     # load model
     print(f"Loading {backbone_name} from timm...")
-    model = timm.create_model(backbone_name, pretrained=True, num_classes = get_num_classes(dataset_name))
+    backbone = timm.create_model(backbone_name, pretrained=True, num_classes = get_num_classes(dataset_name))
+
+    # Freeze the parameters of the base model
+    for param in backbone.parameters():
+      param.requires_grad = False
+    # reset old classifier
+    num_in_features = backbone.get_classifier().in_features
+    backbone.reset_classifier()
+    # combine backbone and new classifier
+    model = CustomClassifier(backbone, num_in_features, get_num_classes(dataset_name))    
     model = model.to(device)
-    # freeze all the layers up to last
-    model = set_to_finetune_mode(model)
-    print("Done")
 
     print("Load data")
     # get model specific transforms (normalization, resize)
