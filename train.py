@@ -138,7 +138,7 @@ def train(net: torch.nn.Module,
         # Early stopping
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            best_model_weights = net.state_dict()
+            best_model_weights = net.classifier.state_dict()
             epochs_without_improvement = 0
         else:
             epochs_without_improvement += 1

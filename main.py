@@ -47,7 +47,7 @@ def main(args):
       param.requires_grad = False
     # reset old classifier
     num_in_features = backbone.get_classifier().in_features
-    backbone.reset_classifier()
+    backbone.reset_classifier(0)
     # combine backbone and new classifier
     model = CustomClassifier(backbone, num_in_features, get_num_classes(dataset_name))    
     model = model.to(device)
