@@ -1,4 +1,5 @@
 import argparse
+import os
 import yaml
 import wandb
 import torch
@@ -6,9 +7,6 @@ import train
 import timm
 from dataset import get_data
 from utils import get_loss_function, get_num_classes, get_optimizer, set_to_finetune_mode
-
-import timm
-
 
 def main(args):
     
@@ -28,10 +26,10 @@ def main(args):
         
     # get train options
     batch_size_train = config["data"]["batch_size_train"]
-    batch_size_test = config["data"]["batch_size_test"]
-    num_workers = config["data"]["num_workers"]
+    #batch_size_test = config["data"]["batch_size_test"]  # same for train
+    #num_workers = config["data"]["num_workers"]  # dynamically obtained
     num_epochs = config["training"]["num_epochs"]
-    backbone_name = config["backbone"]  # (timm) backbone
+    backbone_name = config["backbone_name"]  # (timm) backbone
     dataset_name = config["dataset_name"]   # dataset
  
  
@@ -49,8 +47,9 @@ def main(args):
     print("Load data")
     # get model specific transforms (normalization, resize)
     data_config = timm.data.resolve_model_data_config(model)
-    transforms = timm.data.create_transform(**data_config, is_training=False)
-    train_loader, val_loader, test_loader = get_data(dataset_name, batch_size_train, transforms, num_workers, val_split=0.2)
+    transforms = timm.data.create_transform(**data_config, is_training=True)
+    #transforms = timm.data.create_transform(**data_config, is_training=False)
+    train_loader, val_loader, test_loader = get_data(dataset_name, batch_size_train, transforms, val_split=0.2)
     print("Done")
 
     # Define loss and optimizer
@@ -58,7 +57,7 @@ def main(args):
     optimizer = get_optimizer(model)
 
     # Define folder to save model weights
-    save_folder = f"trained_models/{backbone_name}/{dataset_name}"
+    save_folder = os.path.join("trained_models", backbone_name, dataset_name)
     run_name = args.run_name
 
     print("Training...")

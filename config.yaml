@@ -1,5 +1,5 @@
 dataset_name: "cub2011"
-backbone: "convnextv2_base.fcmae_ft_in22k_in1k"
+backbone_name: "convnextv2_base.fcmae_ft_in22k_in1k"
 
 training:
   num_epochs: 30
@@ -8,7 +8,7 @@ training:
 data:
   batch_size_train: 64
   batch_size_test: 64
-  num_workers: 4
+  #num_workers: 4 
 
 logger:
   wandb: true
