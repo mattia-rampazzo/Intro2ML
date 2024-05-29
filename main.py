@@ -44,14 +44,20 @@ def main(args):
     # load model
     print(f"Loading {backbone_name} from timm...")
     encoder = timm.create_model(backbone_name, pretrained=True, num_classes = get_num_classes(dataset_name), features_only=True)
+    dummy_input = torch.randn(1, 3, 224, 224)
+
+    # Get the output by passing the dummy input through the model
+    encoder = encoder(dummy_input)
+
+    last_feature_shape = encoder[-1].shape[1:]
     #encoder.head = nn.Identity()
     encoder = encoder.to(device)
     # freeze all the layers up to last
     #encoder = set_to_finetune_mode(encoder)
 
     # missing something here
-    classifier = model.LabelPredictor().to(device)
-    discriminator = model.DomainDiscriminator().to(device)
+    classifier = model.LabelPredictor(last_feature_shape, batch_size_train).to(device)
+    discriminator = model.DomainDiscriminator(last_feature_shape).to(device)
     print("Done")
 
     print("Load data")
