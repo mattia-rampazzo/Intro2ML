@@ -5,6 +5,7 @@ import os
 
 from dogs import Dogs
 from cub2011 import Cub2011
+from LabelSmoothing import LabelSmoothingLoss
 
 dataset_num_classes = {
     'aircraft': 100,
@@ -70,8 +71,12 @@ def get_optimizer(model):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
     return optimizer
 
-def get_loss_function():
-    loss_function = nn.CrossEntropyLoss()
+def get_loss_function(num_classes):
+    ##### optimizer setting
+    loss_function = LabelSmoothingLoss(
+        classes=num_classes, smoothing=0.1
+    )  # label smoothing to improve performance
+    # loss_function = nn.CrossEntropyLoss()
     return loss_function
 
 def save_model(weights, save_folder, run_name):

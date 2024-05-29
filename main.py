@@ -5,6 +5,7 @@ import wandb
 import torch
 import train
 import timm
+#from transformers import AutoModel
 from dataset import get_data
 from utils import get_loss_function, get_num_classes, get_optimizer, set_to_finetune_mode
 
@@ -39,8 +40,12 @@ def main(args):
     print(f"Working on {device}")
 
     # load model
+    #if backbone_name.split("/")[0] == "timm":
     print(f"Loading {backbone_name} from timm...")
     backbone = timm.create_model(backbone_name, pretrained=True, num_classes = get_num_classes(dataset_name))
+    #else:
+    #    print(f"Loading {backbone_name} elsewehere...")
+    #    backbone = AutoModel.from_pretrained(backbone_name, cache_dir="./model_cache")        
 
     # Freeze the parameters of the base model
     for param in backbone.parameters():
@@ -61,7 +66,7 @@ def main(args):
     print("Done")
 
     # Define loss and optimizer
-    loss_function = get_loss_function()
+    loss_function = get_loss_function(get_num_classes(dataset_name))
     optimizer = get_optimizer(model)
 
     # Define folder to save model weights
