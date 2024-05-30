@@ -2,6 +2,7 @@ import torch
 import yaml
 import timm
 import argparse
+from submit import submit
 import os
 
 from model import CustomClassifier
@@ -24,7 +25,7 @@ def main(args):
     #num_workers = config["data"]["num_workers"]  # dynamically obtained
     backbone_name = config["backbone_name"]  # (timm) backbone
     dataset_name = config["dataset_name"]   # dataset
- 
+    preds = {}
  
     print("Starting")
     print(f"Working on {device}")
@@ -72,8 +73,14 @@ def main(args):
     print("Evaluating on test data...")
     # Define loss and optimizer
     loss_function = get_loss_function()
-    loss, acc = test_step(model, test_loader, loss_function, device)
+    loss, acc, preds = test_step(model, test_loader, loss_function, device)
 
+    res = {
+    "images": preds,
+    "groupname": "BDV3000"
+}
+
+    submit(res)
     print(f"Top 1 accuracy: {acc}")
 
     print("Done")

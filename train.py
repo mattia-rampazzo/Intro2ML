@@ -47,6 +47,7 @@ def test_step(net, data_loader, cost_function, device):
     samples = 0.
     cumulative_loss = 0.
     cumulative_accuracy = 0.
+    all_predictions = []
 
     # Set the network to evaluation mode
     net.eval()
@@ -70,11 +71,13 @@ def test_step(net, data_loader, cost_function, device):
             samples += inputs.shape[0]
             _, predicted = outputs.max(1)
 
+            # Store predictions
+            all_predictions.extend(predicted.cpu().numpy())
+
             # Compute accuracy
             cumulative_accuracy += predicted.eq(targets).sum().item()
 
-    return cumulative_loss / samples, cumulative_accuracy / samples
-
+    return cumulative_loss / samples, cumulative_accuracy / samples, all_predictions
 
 def train(net: torch.nn.Module, 
           train_loader: torch.utils.data.DataLoader, 
@@ -101,7 +104,7 @@ def train(net: torch.nn.Module,
     epochs_without_improvement = 0 
     
     # learning rate scheduler
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=128)
 
     # Log to wandb
     wandb.log({
