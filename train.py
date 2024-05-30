@@ -1,4 +1,5 @@
 import torch
+import math
 import wandb
 from utils import save_model
 
@@ -85,39 +86,37 @@ def train(net: torch.nn.Module,
           test_loader: torch.utils.data.DataLoader, 
           optimizer: torch.optim.Optimizer,
           loss_function: torch.nn.Module,
+          scheduler: torch.optim.lr_scheduler,
           epochs: int,
           device: torch.device,
           save_folder: str,
           run_name: str):    # -> Dict[str, List]:
 
 
-    # Computes evaluation results before training
-    print("Before training:")
-    train_loss, train_accuracy, preds = test_step(net, train_loader, loss_function, device)
-    val_loss, val_accuracy, preds = test_step(net, val_loader, loss_function, device)
-    test_loss, test_accuracy, preds = test_step(net, test_loader, loss_function, device)
+    # # Computes evaluation results before training
+    # print("Before training:")
+    # train_loss, train_accuracy, preds = test_step(net, train_loader, loss_function, device)
+    # val_loss, val_accuracy, preds = test_step(net, val_loader, loss_function, device)
+    # test_loss, test_accuracy, preds = test_step(net, test_loader, loss_function, device)
 
-    best_val_loss = val_loss
+    # # Log to wandb
+    # wandb.log({
+    #     "Training loss": train_loss,
+    #     "Validation loss" : val_loss,
+    #     "Training accuracy": train_accuracy,
+    #     "Validation accuracy" : val_accuracy
+    # })
+
+    # print(f"\tTraining loss {train_loss:.5f}, Training accuracy {train_accuracy:.2f}")
+    # print(f"\tValidation loss {val_loss:.5f}, Validation accuracy {val_accuracy:.2f}")
+    # print(f"\tTest loss {test_loss:.5f}, Test accuracy {test_accuracy:.2f}")
+    # print("-----------------------------------------------------")
+
+    best_val_loss = math.inf
     best_model_weights = None
 
-    early_stopping_patience = 3 # at most 3 epoch without improving
+    early_stopping_patience = 5 # at most 3 epoch without improving
     epochs_without_improvement = 0 
-    
-    # learning rate scheduler
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=128)
-
-    # Log to wandb
-    wandb.log({
-        "Training loss": train_loss,
-        "Validation loss" : val_loss,
-        "Training accuracy": train_accuracy,
-        "Validation accuracy" : val_accuracy
-    })
-
-    print(f"\tTraining loss {train_loss:.5f}, Training accuracy {train_accuracy:.2f}")
-    print(f"\tValidation loss {val_loss:.5f}, Validation accuracy {val_accuracy:.2f}")
-    print(f"\tTest loss {test_loss:.5f}, Test accuracy {test_accuracy:.2f}")
-    print("-----------------------------------------------------")
 
     # For each epoch, train the network and then compute evaluation results
     for e in range(epochs):
@@ -154,24 +153,24 @@ def train(net: torch.nn.Module,
     # Load the best model weights
     save_model(best_model_weights, save_folder, run_name)
     
-    # Compute final evaluation results
-    print("After training:")
-    train_loss, train_accuracy, preds = test_step(net, train_loader, loss_function, device)
-    val_loss, val_accuracy, preds = test_step(net, val_loader, loss_function, device)
-    test_loss, test_accuracy, preds = test_step(net, test_loader, loss_function, device)
+    # # Compute final evaluation results
+    # print("After training:")
+    # train_loss, train_accuracy, preds = test_step(net, train_loader, loss_function, device)
+    # val_loss, val_accuracy, preds = test_step(net, val_loader, loss_function, device)
+    # test_loss, test_accuracy, preds = test_step(net, test_loader, loss_function, device)
 
-    # Log to wandb
-    wandb.log({
-        "Training loss": train_loss,
-        "Validation loss" : val_loss,
-        "Training accuracy": train_accuracy,
-        "Validation accuracy" : val_accuracy
-    })
+    # # Log to wandb
+    # wandb.log({
+    #     "Training loss": train_loss,
+    #     "Validation loss" : val_loss,
+    #     "Training accuracy": train_accuracy,
+    #     "Validation accuracy" : val_accuracy
+    # })
 
-    print(f"\tTraining loss {train_loss:.5f}, Training accuracy {train_accuracy:.2f}")
-    print(f"\tValidation loss {val_loss:.5f}, Validation accuracy {val_accuracy:.2f}")
-    print(f"\tTest loss {test_loss:.5f}, Test accuracy {test_accuracy:.2f}")
-    print("-----------------------------------------------------")
+    # print(f"\tTraining loss {train_loss:.5f}, Training accuracy {train_accuracy:.2f}")
+    # print(f"\tValidation loss {val_loss:.5f}, Validation accuracy {val_accuracy:.2f}")
+    # print(f"\tTest loss {test_loss:.5f}, Test accuracy {test_accuracy:.2f}")
+    # print("-----------------------------------------------------")
 
 
 

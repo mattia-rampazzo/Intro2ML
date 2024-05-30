@@ -1,7 +1,7 @@
 import torch
 import torchvision
-import torch.nn as nn
 import os
+import timm
 
 from dogs import Dogs
 from cub2011 import Cub2011
@@ -66,10 +66,22 @@ def set_to_finetune_mode(model, do_summary=False):
 
     return model
 
+def get_transforms(data_config, is_training):
+    transforms = timm.data.create_transform(is_training=is_training, **data_config, auto_augment='rand-m9-n3-mstd0.5')
+    return transforms
+
+
 def get_optimizer(model):
+    lr=0.001
+    wd=0.0001
     # optimizer = optim.SGD(net.parameters(), lr=lr, weight_decay=wd, momentum=momentum)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
     return optimizer
+
+def get_scheduler(optimizer):
+    # learning rate scheduler
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
+    return scheduler
 
 def get_loss_function(num_classes):
     ##### optimizer setting

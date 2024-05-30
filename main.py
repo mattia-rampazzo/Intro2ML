@@ -7,7 +7,7 @@ import train
 import timm
 #from transformers import AutoModel
 from dataset import get_data
-from utils import get_loss_function, get_num_classes, get_optimizer, set_to_finetune_mode
+from utils import get_loss_function, get_num_classes, get_optimizer, get_transforms, get_scheduler
 
 from model import CustomClassifier
 
@@ -60,7 +60,7 @@ def main(args):
     print("Load data")
     # get model specific transforms (normalization, resize)
     data_config = timm.data.resolve_model_data_config(model)
-    transforms = timm.data.create_transform(**data_config, is_training=True)
+    transforms = get_transforms(data_config, True)
     #transforms = timm.data.create_transform(**data_config, is_training=False)
     train_loader, val_loader, test_loader = get_data(dataset_name, batch_size_train, transforms, val_split=0.2)
     print("Done")
@@ -68,6 +68,7 @@ def main(args):
     # Define loss and optimizer
     loss_function = get_loss_function(get_num_classes(dataset_name))
     optimizer = get_optimizer(model)
+    scheduler = get_scheduler(optimizer)
 
     # Define folder to save model weights
     save_folder = os.path.join("trained_models", backbone_name, dataset_name)
@@ -81,6 +82,7 @@ def main(args):
         test_loader,
         optimizer,
         loss_function,
+        scheduler,
         num_epochs,
         device,
         save_folder,
