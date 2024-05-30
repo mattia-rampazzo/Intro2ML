@@ -7,15 +7,16 @@ class CustomClassifier(nn.Module):
         self.backbone = backbone
         self.classifier = nn.Sequential(
             nn.BatchNorm1d(num_in_features),
-            nn.Linear(in_features=num_in_features, out_features=1024, bias=True),
-            nn.ELU(),
-            nn.BatchNorm1d(1024),
-            #nn.Dropout(0.2),
-            #nn.Linear(in_features=1024, out_features=1024, bias=True),
-            #nn.ELU(),
-            #nn.BatchNorm1d(1024),
-            #nn.Dropout(0.5),
-            nn.Linear(in_features=1024, out_features=num_classes, bias=True)
+            nn.Dropout(0.5),
+            nn.Linear(in_features=num_in_features, out_features=512, bias=True),
+            nn.GELU(),
+            nn.BatchNorm1d(512),
+            nn.Dropout(0.5),
+            nn.Linear(in_features=512, out_features=512, bias=True),
+            nn.GELU(),
+            nn.BatchNorm1d(512),
+            nn.Dropout(0.5),
+            nn.Linear(in_features=512, out_features=num_classes, bias=True)
         )
 
     def forward(self, x):

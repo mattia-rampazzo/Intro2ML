@@ -43,27 +43,13 @@ def get_num_classes(dataset_name):
     return num_classes
 
 
-def get_transforms(data_config, is_training):
-    transforms = None
-    if is_training:
-        transforms = timm.data.create_transform(**data_config, is_training=is_training, auto_augment='rand-m9-mstd0.5')
-    else:
-        transforms = timm.data.create_transform(**data_config, is_training=is_training)
-    return transforms
-
-
-def get_optimizer(model):
-    lr=0.01
+def get_optimizer(model, lr, wd, momentum=0.9):
+    print(f"old lr:{lr}")
+    lr=0.001
     wd=0.0001
-    # optimizer = optim.SGD(net.parameters(), lr=lr, weight_decay=wd, momentum=momentum)
+    #optimizer = torch.optim.SGD(model.parameters(), lr=lr, weight_decay=wd, momentum=momentum)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
     return optimizer
-
-def get_scheduler(optimizer):
-    # learning rate scheduler
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30) # num_epochs
-    # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
-    return scheduler
 
 def get_loss_function(num_classes):
     ##### optimizer setting
@@ -73,6 +59,41 @@ def get_loss_function(num_classes):
     # loss_function = nn.CrossEntropyLoss()
     return loss_function
 
+def get_scheduler(optimizer):
+    # learning rate scheduler
+    #scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30) # num_epochs
+    return scheduler
+
+def get_transform(data_config, is_training):
+    print("Using standard trasforms")
+    return timm.data.create_transform(**data_config, is_training=False, auto_augment='rand-m9-n3-mstd0.5')
+
+    re_size = 512
+    crop_size = 224
+
+    if is_training==True:
+        train_transform = transforms.Compose(
+            [
+                transforms.Resize((re_size, re_size)),
+                transforms.RandomCrop(crop_size, padding=8),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            ]
+        )
+        return train_transform
+    else:
+        test_transform = transforms.Compose(
+            [
+                transforms.Resize((re_size, re_size)),
+                transforms.CenterCrop(crop_size),
+                transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            ]
+        )
+        return test_transform
+    
 def save_model(weights, save_folder, run_name):
     print("Saving model")
     if not os.path.exists(save_folder):

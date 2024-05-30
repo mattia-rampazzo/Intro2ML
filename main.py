@@ -7,7 +7,7 @@ import train
 import timm
 #from transformers import AutoModel
 from dataset import get_data
-from utils import get_loss_function, get_num_classes, get_optimizer, get_transforms, get_scheduler
+from utils import get_loss_function, get_num_classes, get_optimizer, get_transform, get_scheduler
 
 from model import CustomClassifier
 
@@ -56,19 +56,36 @@ def main(args):
     print("Load data")
     # get model specific transforms (normalization, resize)
     data_config = timm.data.resolve_model_data_config(model)
-    transforms = get_transforms(data_config, True)
+    transforms = get_transform(data_config, True)
     #transforms = timm.data.create_transform(**data_config, is_training=False)
     train_loader, val_loader, test_loader = get_data(dataset_name, batch_size_train, transforms, val_split=0.2)
     print("Done")
 
     # Define loss and optimizer
+    lr_begin = (batch_size_train / 256) * 0.1  # learning rate at begining
+    momentum = 0.9
+    wd = 5e-4
     loss_function = get_loss_function(get_num_classes(dataset_name))
-    optimizer = get_optimizer(model)
+    optimizer = get_optimizer(model, lr_begin , wd, momentum)
     scheduler = get_scheduler(optimizer)
 
     # Define folder to save model weights
     save_folder = os.path.join("trained_models", backbone_name, dataset_name)
     run_name = args.run_name
+
+    use_amp = 2
+    ##### Apex
+    if use_amp == 1:  # use nvidia apex.amp
+        print('\n===== Using NVIDIA AMP =====')
+        from apex import amp
+
+        net.cuda()
+        net, optimizer = amp.initialize(net, optimizer, opt_level='O1')
+    elif use_amp == 2:  # use torch.cuda.amp
+        print('\n===== Using Torch AMP =====')
+        from torch.cuda.amp import GradScaler, autocast
+
+        scaler = GradScaler()
 
     print("Training...")
     train.train(
@@ -77,17 +94,14 @@ def main(args):
         val_loader,
         test_loader,
         optimizer,
-        loss_function,
         scheduler,
+        loss_function,
         num_epochs,
         device,
         save_folder,
         run_name
     )
     print("Done")
-
-
-
 
 
 if __name__ == "__main__":
