@@ -93,9 +93,9 @@ def train(net: torch.nn.Module,
 
     # Computes evaluation results before training
     print("Before training:")
-    train_loss, train_accuracy = test_step(net, train_loader, loss_function, device)
-    val_loss, val_accuracy = test_step(net, val_loader, loss_function, device)
-    test_loss, test_accuracy = test_step(net, test_loader, loss_function, device)
+    train_loss, train_accuracy, preds = test_step(net, train_loader, loss_function, device)
+    val_loss, val_accuracy, preds = test_step(net, val_loader, loss_function, device)
+    test_loss, test_accuracy, preds = test_step(net, test_loader, loss_function, device)
 
     best_val_loss = val_loss
     best_model_weights = None
@@ -123,7 +123,7 @@ def train(net: torch.nn.Module,
     for e in range(epochs):
         train_loss, train_accuracy = training_step(net, train_loader, optimizer, loss_function, device)
         scheduler.step()
-        val_loss, val_accuracy = test_step(net, val_loader, loss_function, device)
+        val_loss, val_accuracy, preds = test_step(net, val_loader, loss_function, device)
 
         # Log to wandb
         wandb.log({
@@ -156,9 +156,9 @@ def train(net: torch.nn.Module,
     
     # Compute final evaluation results
     print("After training:")
-    train_loss, train_accuracy = test_step(net, train_loader, loss_function, device)
-    val_loss, val_accuracy = test_step(net, val_loader, loss_function, device)
-    test_loss, test_accuracy = test_step(net, test_loader, loss_function, device)
+    train_loss, train_accuracy, preds = test_step(net, train_loader, loss_function, device)
+    val_loss, val_accuracy, preds = test_step(net, val_loader, loss_function, device)
+    test_loss, test_accuracy, preds = test_step(net, test_loader, loss_function, device)
 
     # Log to wandb
     wandb.log({
