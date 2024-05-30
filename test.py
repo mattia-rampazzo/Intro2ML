@@ -52,19 +52,11 @@ def main(args):
     model.eval()
     model = model.to(device)
 
-    print("Load data")
-    # get model specific transforms (normalization, resize)
-    data_config = timm.data.resolve_model_data_config(model)
-    #transforms = timm.data.create_transform(**data_config, is_training=True)
-    transforms = timm.data.create_transform(**data_config, is_training=False)
-    _, _, test_loader = get_data(dataset_name, batch_size_test, transforms, val_split=0.2)
-    print("Done")
-
 
     print("Load data")
     # get model specific transforms (normalization, resize)
     data_config = timm.data.resolve_model_data_config(model)
-    #transforms = timm.data.create_transform(**data_config, is_training=True)
+
     transforms = timm.data.create_transform(**data_config, is_training=False)
     _, _, test_loader = get_data(dataset_name, batch_size_test, transforms, val_split=0.2)
     print("Done")
@@ -72,15 +64,15 @@ def main(args):
 
     print("Evaluating on test data...")
     # Define loss and optimizer
-    loss_function = get_loss_function()
+    loss_function = get_loss_function(get_num_classes(dataset_name))
     loss, acc, preds = test_step(model, test_loader, loss_function, device)
 
     res = {
     "images": preds,
     "groupname": "BDV3000"
-}
+    }
 
-    submit(res)
+    # submit(res)
     print(f"Top 1 accuracy: {acc}")
 
     print("Done")
