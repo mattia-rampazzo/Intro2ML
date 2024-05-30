@@ -40,12 +40,8 @@ def main(args):
     print(f"Working on {device}")
 
     # load model
-    #if backbone_name.split("/")[0] == "timm":
     print(f"Loading {backbone_name} from timm...")
-    backbone = timm.create_model(backbone_name, pretrained=True, num_classes = get_num_classes(dataset_name))
-    #else:
-    #    print(f"Loading {backbone_name} elsewehere...")
-    #    backbone = AutoModel.from_pretrained(backbone_name, cache_dir="./model_cache")        
+    backbone = timm.create_model(backbone_name, pretrained=True, num_classes = get_num_classes(dataset_name))    
 
     # Freeze the parameters of the base model
     for param in backbone.parameters():

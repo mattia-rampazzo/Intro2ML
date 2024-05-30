@@ -2,7 +2,7 @@ import torch
 import torchvision
 import os
 import timm
-
+import torch.nn as nn
 from dogs import Dogs
 from cub2011 import Cub2011
 from LabelSmoothing import LabelSmoothingLoss
@@ -42,37 +42,18 @@ def get_num_classes(dataset_name):
 
     return num_classes
 
-def set_to_finetune_mode(model, do_summary=False):
-
-    classifier = model.default_cfg['classifier']
-    # print(classifier)
-
-    # Freeze all parameters except those in the classifier
-    for name, param in model.named_parameters():
-        if name.startswith(classifier):
-            param.requires_grad = True
-        else:
-            param.requires_grad = False
-
-    if do_summary:
-        from torchinfo import summary
-        summary(model=model, 
-            input_size=(32, 3, 224, 224), # make sure this is "input_size", not "input_shape"
-            # col_names=["input_size"], # uncomment for smaller output
-            col_names=["input_size", "output_size", "num_params", "trainable"],
-            col_width=20,
-            row_settings=["var_names"]
-        ) 
-
-    return model
 
 def get_transforms(data_config, is_training):
-    transforms = timm.data.create_transform(is_training=is_training, **data_config, auto_augment='rand-m9-n3-mstd0.5')
+    transforms = None
+    if is_training:
+        transforms = timm.data.create_transform(**data_config, is_training=is_training, auto_augment='rand-m9-mstd0.5')
+    else:
+        transforms = timm.data.create_transform(**data_config, is_training=is_training)
     return transforms
 
 
 def get_optimizer(model):
-    lr=0.001
+    lr=0.01
     wd=0.0001
     # optimizer = optim.SGD(net.parameters(), lr=lr, weight_decay=wd, momentum=momentum)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
@@ -80,7 +61,8 @@ def get_optimizer(model):
 
 def get_scheduler(optimizer):
     # learning rate scheduler
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30) # num_epochs
+    # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
     return scheduler
 
 def get_loss_function(num_classes):
