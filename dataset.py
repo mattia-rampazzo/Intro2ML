@@ -1,3 +1,24 @@
+import argparse
+import os
+import random
+import shutil
+from os.path import join
+
+import numpy as np
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
+from torchvision import transforms
+from torchvision.datasets.folder import ImageFolder
+from torchvision.models import resnet50
+from tqdm import tqdm
+from torch.utils.data import random_split
+
+
+from LabelSmoothing import LabelSmoothingLoss
+
+import timm
+
 import os
 import torchvision
 from torch.utils.data import DataLoader, random_split
@@ -8,9 +29,34 @@ from utils import dataset_map
 
 def get_data(dataset_name, batch_size, transforms, val_split=0.2):
     download_path = os.path.join("data", dataset_name)
-
     num_workers = os.cpu_count()
     print(f"Using {num_workers} workers")
+    ##### data settings
+    data_dir = join('data', dataset_name)
+    data_sets = ['train', 'test']
+    nb_class = len(
+        os.listdir(join(data_dir, data_sets[0]))
+    )  # get number of class via img folders automatically
+    # exp_dir = 'result/{}{}'.format(datasets_dir, args.note)  # the folder to save model
+
+    print(nb_class)
+
+        
+    full_training_data = torchvision.datasets.ImageFolder(root=join(data_dir, data_sets[0]), transform=transforms)
+    # test_data = torchvision.datasets.ImageFolder(root=test_path, transform=transforms)
+    # Create train and validation splits
+    num_samples = len(full_training_data)
+    training_samples = int(num_samples * (1 - val_split) + 1)
+    validation_samples = num_samples - training_samples
+    training_data, validation_data = random_split(full_training_data, [training_samples, validation_samples])
+
+    # Initialize dataloaders
+    train_loader = DataLoader(training_data, batch_size, num_workers=num_workers, shuffle=True)
+    val_loader = DataLoader(validation_data, batch_size, num_workers=num_workers, shuffle=False)
+    # test_loader = DataLoader(test_data, batch_size, num_workers=num_workers, shuffle=False)
+
+    return train_loader, val_loader, None
+
 
     # Load dataset
     if dataset_name in dataset_map:

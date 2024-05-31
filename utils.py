@@ -13,7 +13,8 @@ dataset_num_classes = {
     'cub2011': 200,
     'dogs': 120,
     'food': 101,
-    'flowers': 102
+    'flowers': 102,
+    'competition_data': 100
     #'inat2017': None, # too big
     #'nabirds': 400, # no longer publicly accessible
     #'tiny_imagenet': 200 # too big + not a good benchmark
