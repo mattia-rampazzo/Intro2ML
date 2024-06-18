@@ -4,7 +4,7 @@ This project focuses on developing a fine-grained image recognition system capab
 ## Installation
 To get started, clone the repository and install the required dependencies:
 ```
-git clone https://github.com/mattira-rampazzo/fine-grained-image-recognition-Intro2ML.git
+git clone https://github.com/mattia-rampazzo/fine-grained-image-recognition-Intro2ML.git
 cd fine-grained-image-recognition
 pip install -r requirements.txt
 ```
