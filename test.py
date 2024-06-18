@@ -66,8 +66,8 @@ def main(args):
 
     print("Evaluating on test data...")
     # Define loss and optimizer
-    loss_function = get_loss_function()
-    loss, acc = test_step(model, test_loader, loss_function, device)
+    loss_function = get_loss_function(get_num_classes(dataset_name))
+    loss, acc, pred = test_step(model, test_loader, loss_function, device)
 
     print(f"Top 1 accuracy: {acc}")
 
