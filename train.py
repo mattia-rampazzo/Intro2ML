@@ -115,7 +115,7 @@ def train(net: torch.nn.Module,
     best_val_loss = math.inf
     best_model_weights = None
 
-    early_stopping_patience = 5 # at most 3 epoch without improving
+    early_stopping_patience = 3 # at most 3 epoch without improving
     epochs_without_improvement = 0 
 
     # For each epoch, train the network and then compute evaluation results

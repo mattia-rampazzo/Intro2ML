@@ -5,7 +5,6 @@ import wandb
 import torch
 import train
 import timm
-#from transformers import AutoModel
 from dataset import get_data
 from utils import get_loss_function, get_num_classes, get_optimizer, get_transform, get_scheduler
 

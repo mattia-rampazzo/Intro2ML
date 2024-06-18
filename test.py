@@ -2,7 +2,6 @@ import torch
 import yaml
 import timm
 import argparse
-from submit import submit
 import os
 
 from model import CustomClassifier
@@ -12,21 +11,16 @@ from utils import get_loss_function
 from train import test_step
 
 def main(args):
-    
     torch.manual_seed(1234)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
     # load config options
     with open(args.config, "r") as f:
         config = yaml.safe_load(f)
-        
     # get test options
     batch_size_test = config["data"]["batch_size_test"]  # same for train
     #num_workers = config["data"]["num_workers"]  # dynamically obtained
     backbone_name = config["backbone_name"]  # (timm) backbone
     dataset_name = config["dataset_name"]   # dataset
-    preds = {}
- 
     print("Starting")
     print(f"Working on {device}")
 
@@ -52,11 +46,19 @@ def main(args):
     model.eval()
     model = model.to(device)
 
+    print("Load data")
+    # get model specific transforms (normalization, resize)
+    data_config = timm.data.resolve_model_data_config(model)
+    #transforms = timm.data.create_transform(**data_config, is_training=True)
+    transforms = timm.data.create_transform(**data_config, is_training=False)
+    _, _, test_loader = get_data(dataset_name, batch_size_test, transforms, val_split=0.2)
+    print("Done")
+
 
     print("Load data")
     # get model specific transforms (normalization, resize)
     data_config = timm.data.resolve_model_data_config(model)
-
+    #transforms = timm.data.create_transform(**data_config, is_training=True)
     transforms = timm.data.create_transform(**data_config, is_training=False)
     _, _, test_loader = get_data(dataset_name, batch_size_test, transforms, val_split=0.2)
     print("Done")
@@ -64,15 +66,9 @@ def main(args):
 
     print("Evaluating on test data...")
     # Define loss and optimizer
-    loss_function = get_loss_function(get_num_classes(dataset_name))
-    loss, acc, preds = test_step(model, test_loader, loss_function, device)
+    loss_function = get_loss_function()
+    loss, acc = test_step(model, test_loader, loss_function, device)
 
-    res = {
-    "images": preds,
-    "groupname": "BDV3000"
-    }
-
-    # submit(res)
     print(f"Top 1 accuracy: {acc}")
 
     print("Done")
@@ -87,4 +83,3 @@ if __name__ == "__main__":
     parser.add_argument("--run_name", required=False, type=str, help="Name of the run")
     args = parser.parse_args()
     main(args)
-

@@ -3,8 +3,20 @@ import torchvision
 from torch.utils.data import DataLoader, random_split
 from torchvision.datasets.utils import extract_archive
 from torchvision.datasets.utils import download_file_from_google_drive
+from .dogs import Dogs
+from .cub2011 import Cub2011
 
-from utils import dataset_map
+# Mapping dataset names to their corresponding classes
+dataset_map = {
+    'aircraft': torchvision.datasets.FGVCAircraft,
+    'cub2011': Cub2011,
+    'dogs': Dogs,
+    'food': torchvision.datasets.Food101,
+    'flowers': torchvision.datasets.Flowers102
+    #'inat2017': INat2017,
+    #'nabirds': NABirds,
+    #'tiny_imagenet': TinyImageNet 
+}
 
 def get_data(dataset_name, batch_size, transforms, val_split=0.2):
     download_path = os.path.join("data", dataset_name)
@@ -77,3 +89,35 @@ def get_data(dataset_name, batch_size, transforms, val_split=0.2):
     test_loader = DataLoader(test_data, batch_size, num_workers=num_workers, shuffle=False)
 
     return train_loader, val_loader, test_loader
+
+
+# for competition data
+def get_competition_data(dataset_name, batch_size, transforms, val_split=0.2):
+    download_path = os.path.join("data", dataset_name)
+    num_workers = os.cpu_count()
+    print(f"Using {num_workers} workers")
+    ##### data settings
+    data_dir = os.path.join('data', dataset_name)
+    data_sets = ['train', 'test']
+    nb_class = len(
+        os.listdir(os.path.join(data_dir, data_sets[0]))
+    )  # get number of class via img folders automatically
+    # exp_dir = 'result/{}{}'.format(datasets_dir, args.note)  # the folder to save model
+
+    print(nb_class)
+
+        
+    full_training_data = torchvision.datasets.ImageFolder(root=os.path.join(data_dir, data_sets[0]), transform=transforms)
+    # test_data = torchvision.datasets.ImageFolder(root=test_path, transform=transforms)
+    # Create train and validation splits
+    num_samples = len(full_training_data)
+    training_samples = int(num_samples * (1 - val_split) + 1)
+    validation_samples = num_samples - training_samples
+    training_data, validation_data = random_split(full_training_data, [training_samples, validation_samples])
+
+    # Initialize dataloaders
+    train_loader = DataLoader(training_data, batch_size, num_workers=num_workers, shuffle=True)
+    val_loader = DataLoader(validation_data, batch_size, num_workers=num_workers, shuffle=False)
+    # test_loader = DataLoader(test_data, batch_size, num_workers=num_workers, shuffle=False)
+
+    return train_loader, val_loader, None
