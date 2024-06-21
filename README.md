@@ -44,8 +44,8 @@ Currently supported models:
 Download dataset (imagefolder) from: 
 
 - Aircraft = git clone https://github.com/cyizhuo/FGVC-Aircraft-dataset /content/data/FGVC-Aircraft-dataset
-- Cars = git clone https://github.com/cyizhuo/Stanford-Cars-dataset
-- CUB = git clone https://github.com/cyizhuo/CUB-200-2011-dataset
+- Cars = git clone https://github.com/cyizhuo/Stanford-Cars-dataset /content/data/Stanford-Cars-dataset
+- CUB = git clone https://github.com/cyizhuo/CUB-200-2011-dataset /content/data/CUB-200-2011-dataset
 
 Then run with:
 ```
