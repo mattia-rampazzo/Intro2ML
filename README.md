@@ -43,11 +43,11 @@ Currently supported models:
 ## Fully-Trained models
 Download dataset (imagefolder) from: 
 
-- Aircraft = git clone https://github.com/cyizhuo/FGVC-Aircraft-dataset /content/data/FGVC-Aircraft-dataset
-- Cars = git clone https://github.com/cyizhuo/Stanford-Cars-dataset /content/data/Stanford-Cars-dataset
-- CUB = git clone https://github.com/cyizhuo/CUB-200-2011-dataset /content/data/CUB-200-2011-dataset
+- Aircraft = ```git clone https://github.com/cyizhuo/FGVC-Aircraft-dataset /content/data/FGVC-Aircraft-dataset```
+- Cars = ```git clone https://github.com/cyizhuo/Stanford-Cars-dataset /content/data/Stanford-Cars-dataset```
+- CUB = ```git clone https://github.com/cyizhuo/CUB-200-2011-dataset /content/data/CUB-200-2011-dataset```
 
-Then run with:
+Then run with (substitute with name of dataset to run):
 ```
-python fulltrain.py -d 'FGVC-Aircraft-dataset' -w 2 -b 32 # substitute with name of dataset to run
+python fulltrain.py -d 'FGVC-Aircraft-dataset' -w 2 -b 32
 ```
