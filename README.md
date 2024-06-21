@@ -41,9 +41,12 @@ Currently supported models:
  - e.g: convnextv2_base.fcmae_ft_in22k_in1k
 
 ## Fully-Trained models
-download dataset (imagefolder) from: -Aircraft = git clone https://github.com/cyizhuo/FGVC-Aircraft-dataset /content/data/FGVC-Aircraft-dataset
-                                     -Cars = git clone https://github.com/cyizhuo/Stanford-Cars-dataset
-                                     -CUB = git clone https://github.com/cyizhuo/CUB-200-2011-dataset
+Download dataset (imagefolder) from: 
+
+-Aircraft = git clone https://github.com/cyizhuo/FGVC-Aircraft-dataset /content/data/FGVC-Aircraft-dataset
+-Cars = git clone https://github.com/cyizhuo/Stanford-Cars-dataset
+-CUB = git clone https://github.com/cyizhuo/CUB-200-2011-dataset
+
 Then run with:
 ```
 python fulltrain.py -d 'FGVC-Aircraft-dataset' -w 2 -b 32 # substitute with name of dataset to run
