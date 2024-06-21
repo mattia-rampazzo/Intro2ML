@@ -109,7 +109,7 @@ train_loader = DataLoader(
 
 
 ##### Model settings
-net = resnet50(
+net = resnext50_32x4d(
     pretrained=True
 )  # to use more models, see https://pytorch.org/vision/stable/models.html
 net.fc = nn.Linear(
