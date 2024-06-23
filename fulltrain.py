@@ -10,7 +10,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets.folder import ImageFolder
-from torchvision.models import resnet50
+from torchvision.models import resnet50, resnext50_32x4d
 from tqdm import tqdm
 
 from LabelSmoothing import LabelSmoothingLoss
